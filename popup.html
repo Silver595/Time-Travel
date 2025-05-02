@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Time Travel</title>
+  <link rel="icon" type="image/png" href="icon16.png" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-20px flex items-center justify-center text-white font-sans">
+  <div class="bg-gray-800 shadow-xl rounded-xl w-full max-w-2xl border border-gray-600">
+    <!-- Header -->
+    <div class="bg-blue-600 px-6 py-5 rounded-t-xl">
+      <h2 class="text-2xl font-bold text-white text-center">🧭 Time Travel</h2>
+    </div>
+
+    <!-- Main Content -->
+    <div class="p-6 pt-0 pb-0">
+      <!-- Date Picker -->
+      <div class="mb-4">
+        <label for="datePicker" class="block text-base text-gray-300 mb-2">Past Date:</label>
+        <div class="flex items-center gap-2">
+          <input type="date" id="datePicker" class="flex-1 p-4 text-base rounded bg-gray-700 text-white border border-gray-500 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+          <button id="clearDate" class="text-red-400 hover:text-red-500 text-lg">✖</button>
+        </div>
+      </div>
+
+      <!-- Compare Button -->
+      <button id="compareBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 rounded text-lg transition">
+        🔍 Compare
+      </button>
+
+      <!-- Status & Loading -->
+      <div class="mt-4 text-center">
+        <div id="status" class="text-base text-gray-400 italic"></div>
+        <div id="loading" class="hidden mt-3">
+          <svg class="animate-spin h-6 w-6 text-blue-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.3 0 0 5.3 0 12h4zm2 5.3A8 8 0 014 12H0c0 3 1.1 5.8 3 7.9l3-2.6z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
