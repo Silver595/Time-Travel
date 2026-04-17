@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Time Travel for Web",
-  "version": "1.6",
+  "version": "1.7",
   "description": "Compare a website's past version (via Wayback Machine) with its current version in a split-screen view.",
-  "permissions": ["activeTab", "tabs", "storage"],
-  "host_permissions": ["https://archive.org/*", "https://web.archive.org/*"],
+  "permissions": ["activeTab", "tabs", "storage", "declarativeNetRequest"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -24,7 +24,7 @@
   "web_accessible_resources": [
     {
       "resources": ["splitscreen.html", "styles.css", "splitscreen-script.js", "tailwind.min.css"],
-      "matches": ["https://archive.org/*", "https://web.archive.org/*"]
+      "matches": ["<all_urls>"]
     }
   ]
 }
