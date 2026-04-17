@@ -14,11 +14,34 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Critical DOM elements missing.');
       return;
     }
+
     if (!liveUrl || !archiveUrl) {
-      splitScreen.innerHTML = '<div class="w-full text-center text-red-600 p-8">Missing URL parameters.</div>';
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'w-full text-center text-red-600 p-8';
+      errorDiv.textContent = 'Missing URL parameters.';
+      splitScreen.replaceChildren(errorDiv);
       return;
     }
-  
+
+    // --- URL Validation Helpers ---
+    function isValidHttpUrl(urlString) {
+      try {
+        const url = new URL(urlString);
+        return url.protocol === 'https:' || url.protocol === 'http:';
+      } catch {
+        return false;
+      }
+    }
+
+    function isArchiveUrl(urlString) {
+      try {
+        const url = new URL(urlString);
+        return url.hostname === 'web.archive.org' || url.hostname === 'archive.org';
+      } catch {
+        return false;
+      }
+    }
+
     // Feature: Toggle button text for better UX
     const hideLiveBtn = document.getElementById('hideLive');
     const hideArchiveBtn = document.getElementById('hideArchive');
@@ -45,9 +68,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 1000);
     };
   
-    // Set iframe sources
-    archiveFrame.src = archiveUrl;
-    liveFrame.src = liveUrl;
+    // Set iframe sources — with validation
+    if (isArchiveUrl(archiveUrl)) {
+      archiveFrame.src = archiveUrl;
+    } else {
+      archiveBlocked.classList.remove('hidden');
+      archiveBlocked.querySelector('p').textContent = 'Invalid archive URL — must be from archive.org.';
+    }
+
+    if (isValidHttpUrl(liveUrl)) {
+      liveFrame.src = liveUrl;
+    } else {
+      liveBlocked.classList.remove('hidden');
+      liveBlocked.querySelector('p').textContent = 'Invalid live URL — only http/https allowed.';
+    }
   
     // Layout preference
     chrome.storage.local.get('layoutPreference', ({ layoutPreference }) => {
@@ -71,8 +105,17 @@ document.addEventListener('DOMContentLoaded', () => {
       hideArchiveBtn.textContent = archiveVisible ? 'Toggle Archive' : 'Show Archive';
     });
   
-    document.getElementById('openLive')?.addEventListener('click', () => window.open(liveUrl, '_blank'));
-    document.getElementById('openArchive')?.addEventListener('click', () => window.open(archiveUrl, '_blank'));
+    // Open in new tab — with validation + noopener
+    document.getElementById('openLive')?.addEventListener('click', () => {
+      if (isValidHttpUrl(liveUrl)) {
+        window.open(liveUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
+    document.getElementById('openArchive')?.addEventListener('click', () => {
+      if (isArchiveUrl(archiveUrl)) {
+        window.open(archiveUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
   
     // Detect iframe blocking
     detectBlockedIframe(liveFrame, liveBlocked);

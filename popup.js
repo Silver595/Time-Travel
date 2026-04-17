@@ -57,23 +57,76 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Fallback engine
-    async function findClosestSnapshot(url, startDate, maxDays) {
-      for (let i = 0; i <= maxDays; i++) {
-        const date = new Date(startDate);
-        date.setDate(date.getDate() - i);
-        const yyyymmdd = date.toISOString().split('T')[0].replace(/-/g, '') + '000000';
-        const api = `https://archive.org/wayback/available?url=${encodeURIComponent(url)}&timestamp=${yyyymmdd}`;
+    // Validate that a snapshot URL actually points to archive.org
+    function isValidSnapshotUrl(url) {
+      try {
+        const host = new URL(url).hostname;
+        return host === 'web.archive.org' || host === 'archive.org';
+      } catch {
+        return false;
+      }
+    }
 
-        try {
-          const res = await fetch(api);
-          const json = await res.json();
-          if (json?.archived_snapshots?.closest?.available) {
-            return json.archived_snapshots.closest;
-          }
-        } catch (_) {}
+    // Primary: Single call to Wayback Availability API (returns closest snapshot automatically)
+    async function findViaAvailabilityAPI(url, timestamp) {
+      const api = `https://archive.org/wayback/available?url=${encodeURIComponent(url)}&timestamp=${timestamp}`;
+      const res = await fetch(api);
+      if (!res.ok) return null;
+
+      const json = await res.json();
+      const snapshot = json?.archived_snapshots?.closest;
+
+      if (snapshot?.available && snapshot.url && isValidSnapshotUrl(snapshot.url)) {
+        return snapshot;
       }
       return null;
+    }
+
+    // Fallback: CDX API — searches an entire date range in one request
+    async function findViaCDX(url, startDate, maxDays) {
+      const from = new Date(startDate);
+      from.setDate(from.getDate() - maxDays);
+      const fromStr = from.toISOString().split('T')[0].replace(/-/g, '');
+      const toStr = new Date(startDate).toISOString().split('T')[0].replace(/-/g, '');
+
+      const api = `https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(url)}&from=${fromStr}&to=${toStr}&output=json&limit=-1&fl=timestamp,statuscode`;
+      const res = await fetch(api);
+      if (!res.ok) return null;
+
+      const rows = await res.json();
+      // First row is headers ["timestamp","statuscode"], rest are data
+      if (!rows || rows.length < 2) return null;
+
+      // Find the most recent successful snapshot (status 200)
+      for (let i = rows.length - 1; i >= 1; i--) {
+        const [timestamp, statuscode] = rows[i];
+        if (statuscode === '200') {
+          const snapshotUrl = `https://web.archive.org/web/${timestamp}/${url}`;
+          return { url: snapshotUrl, timestamp, available: true };
+        }
+      }
+      return null;
+    }
+
+    // Combined: fast primary → fallback
+    async function findClosestSnapshot(url, startDate, maxDays) {
+      const timestamp = new Date(startDate).toISOString().split('T')[0].replace(/-/g, '') + '000000';
+
+      // Try the fast availability API first (single request)
+      try {
+        const result = await findViaAvailabilityAPI(url, timestamp);
+        if (result) return result;
+      } catch (err) {
+        console.warn('Availability API failed, trying CDX fallback:', err.message);
+      }
+
+      // Fallback: CDX API searches the full date range in one request
+      try {
+        return await findViaCDX(url, startDate, maxDays);
+      } catch (err) {
+        console.warn('CDX API fallback also failed:', err.message);
+        return null;
+      }
     }
 
     function updateStatus(message, color) {
