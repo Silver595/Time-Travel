@@ -8,7 +8,7 @@ A Chrome Extension (Manifest V3) that fetches a website's historical snapshot fr
 [![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/ogckpcboinbcohhilmofkalobpkolkib?label=Users&logo=googlechrome&logoColor=white&color=34A853)](https://chromewebstore.google.com/detail/time-travel-for-web/ogckpcboinbcohhilmofkalobpkolkib)
 [![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/ogckpcboinbcohhilmofkalobpkolkib?label=Rating&logo=googlechrome&logoColor=white&color=FBBC05)](https://chromewebstore.google.com/detail/time-travel-for-web/ogckpcboinbcohhilmofkalobpkolkib)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)
-![License](https://img.shields.io/badge/license-MIT-lightgrey)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
 ---
 
