@@ -4,9 +4,10 @@
 
 A Chrome Extension (Manifest V3) that fetches a website's historical snapshot from the **Wayback Machine** and displays it alongside the live version in a split-screen view.
 
-![Chrome](https://img.shields.io/badge/Chrome-Extension-blue?logo=googlechrome&logoColor=white)
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/ogckpcboinbcohhilmofkalobpkolkib?label=Chrome%20Web%20Store&logo=googlechrome&logoColor=white&color=4285F4)](https://chromewebstore.google.com/detail/time-travel-for-web/ogckpcboinbcohhilmofkalobpkolkib)
+[![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/ogckpcboinbcohhilmofkalobpkolkib?label=Users&logo=googlechrome&logoColor=white&color=34A853)](https://chromewebstore.google.com/detail/time-travel-for-web/ogckpcboinbcohhilmofkalobpkolkib)
+[![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/ogckpcboinbcohhilmofkalobpkolkib?label=Rating&logo=googlechrome&logoColor=white&color=FBBC05)](https://chromewebstore.google.com/detail/time-travel-for-web/ogckpcboinbcohhilmofkalobpkolkib)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)
-![Version](https://img.shields.io/badge/version-1.7-orange)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ---
@@ -26,7 +27,17 @@ A Chrome Extension (Manifest V3) that fetches a website's historical snapshot fr
 
 ## 🛠️ Installation
 
-### From Source (Developer Mode)
+### ⭐ From Chrome Web Store (Recommended)
+
+Install directly from the Chrome Web Store with one click:
+
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/time-travel-for-web/ogckpcboinbcohhilmofkalobpkolkib">
+    <img src="https://storage.googleapis.com/web-dev-uploads/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/iNEddTyWiMfLSwFD6qGq.png" alt="Available in the Chrome Web Store" width="248" />
+  </a>
+</p>
+
+### 🔧 From Source (Developer Mode)
 
 1. **Clone the repository:**
    ```bash
@@ -141,6 +152,19 @@ Time-Travel/
 3. Commit your changes (`git commit -m 'Add my feature'`)
 4. Push to the branch (`git push origin feature/my-feature`)
 5. Open a Pull Request
+
+---
+
+## 🛡️ Privacy
+
+Your privacy matters. This extension:
+
+- ✅ Does **not** collect or sell any user data
+- ✅ Does **not** track your browsing activity
+- ✅ Does **not** transfer data for purposes unrelated to core functionality
+- ✅ Does **not** use data for creditworthiness or lending purposes
+
+Read the full [Privacy Policy](https://docs.google.com/document/d/1ddFlmfQ250Mtlkv7PTw2pdAFtEMn32VzxHYe-NkoWrk/edit?usp=sharing).
 
 ---
 
