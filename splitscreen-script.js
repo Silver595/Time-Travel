@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const liveUrl = params.get('live');
     const archiveUrl = params.get('archive');
@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const archiveBlocked = document.getElementById('archiveBlocked');
     const liveBlocked = document.getElementById('liveBlocked');
   
-    // Null checks for critical DOM elements
     if (!liveFrame || !archiveFrame || !splitScreen) {
       console.error('Critical DOM elements missing.');
       return;
@@ -23,173 +22,145 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // --- URL Validation Helpers ---
+    // --- URL Validation ---
     function isValidHttpUrl(urlString) {
       try {
         const url = new URL(urlString);
         return url.protocol === 'https:' || url.protocol === 'http:';
-      } catch {
-        return false;
-      }
+      } catch { return false; }
     }
 
     function isArchiveUrl(urlString) {
       try {
         const url = new URL(urlString);
         return url.hostname === 'web.archive.org' || url.hostname === 'archive.org';
-      } catch {
-        return false;
-      }
+      } catch { return false; }
     }
 
-    // --- Strip iframe-blocking headers for this tab only ---
+    // --- Strip iframe-blocking headers (fire-and-forget) ---
     const RULE_ID = 1;
 
-    async function enableIframeLoading() {
-      try {
-        const tab = await chrome.tabs.getCurrent();
-        if (!tab?.id) return;
+    function setupHeaderRules() {
+      if (!chrome?.declarativeNetRequest?.updateDynamicRules) {
+        console.warn('declarativeNetRequest not available');
+        return Promise.resolve();
+      }
 
-        await chrome.declarativeNetRequest.updateDynamicRules({
+      return chrome.tabs.getCurrent().then(tab => {
+        if (!tab?.id) return;
+        return chrome.declarativeNetRequest.updateDynamicRules({
           removeRuleIds: [RULE_ID],
-          addRules: [
-            {
-              id: RULE_ID,
-              priority: 1,
-              action: {
-                type: 'modifyHeaders',
-                responseHeaders: [
-                  { header: 'x-frame-options', operation: 'remove' },
-                  { header: 'content-security-policy', operation: 'remove' },
-                ]
-              },
-              condition: {
-                tabIds: [tab.id],
-                resourceTypes: ['sub_frame']
-              }
+          addRules: [{
+            id: RULE_ID,
+            priority: 1,
+            action: {
+              type: 'modifyHeaders',
+              responseHeaders: [
+                { header: 'x-frame-options', operation: 'remove' },
+                { header: 'content-security-policy', operation: 'remove' },
+              ]
+            },
+            condition: {
+              tabIds: [tab.id],
+              resourceTypes: ['sub_frame']
             }
-          ]
+          }]
         });
-        console.log('Iframe header rules enabled for tab', tab.id);
-      } catch (err) {
-        console.warn('Could not set up iframe header rules:', err);
+      }).catch(err => console.warn('Header rule setup failed:', err));
+    }
+
+    function cleanupRules() {
+      if (!chrome?.declarativeNetRequest?.updateDynamicRules) return;
+      chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [RULE_ID] }).catch(() => {});
+    }
+
+    // --- Load iframes ---
+    function loadIframes() {
+      if (isArchiveUrl(archiveUrl)) {
+        archiveFrame.src = archiveUrl;
+      } else {
+        archiveBlocked.classList.remove('hidden');
+        archiveBlocked.querySelector('p').textContent = 'Invalid archive URL.';
+      }
+
+      if (isValidHttpUrl(liveUrl)) {
+        liveFrame.src = liveUrl;
+      } else {
+        liveBlocked.classList.remove('hidden');
+        liveBlocked.querySelector('p').textContent = 'Invalid live URL.';
       }
     }
 
-    async function disableIframeLoading() {
-      try {
-        await chrome.declarativeNetRequest.updateDynamicRules({
-          removeRuleIds: [RULE_ID]
-        });
-      } catch (_) {}
-    }
-
-    // Enable header stripping BEFORE loading iframes
-    await enableIframeLoading();
-
-    // Clean up rules when the page closes
-    window.addEventListener('beforeunload', () => {
-      disableIframeLoading();
+    // Set up rules first, then load iframes (with timeout fallback)
+    let iframesLoaded = false;
+    setupHeaderRules().then(() => {
+      if (!iframesLoaded) {
+        iframesLoaded = true;
+        loadIframes();
+      }
     });
+    // Fallback: load iframes after 300ms even if rule setup hangs
+    setTimeout(() => {
+      if (!iframesLoaded) {
+        iframesLoaded = true;
+        loadIframes();
+      }
+    }, 300);
 
-    // Feature: Toggle button text for better UX
+    window.addEventListener('beforeunload', cleanupRules);
+
+    // --- Detect blocked iframes ---
+    function detectBlockedIframe(frame, panel) {
+      setTimeout(() => {
+        try { void frame.contentDocument; } catch { return; }
+        if (frame.contentDocument?.body?.innerText?.trim() === '' && !frame.contentDocument.title) {
+          panel.classList.remove('hidden');
+        }
+      }, 3000);
+    }
+    detectBlockedIframe(liveFrame, liveBlocked);
+    detectBlockedIframe(archiveFrame, archiveBlocked);
+
+    // --- UI Controls ---
     const hideLiveBtn = document.getElementById('hideLive');
     const hideArchiveBtn = document.getElementById('hideArchive');
-    let liveVisible = true;
-    let archiveVisible = true;
+    let liveVisible = true, archiveVisible = true;
   
     const setLayout = (layout) => {
       const isHorizontal = layout === 'horizontal';
       splitScreen.style.flexDirection = isHorizontal ? 'row' : 'column';
-      splitScreen.querySelectorAll('iframe').forEach((iframe) => {
+      splitScreen.querySelectorAll('iframe').forEach(iframe => {
         iframe.style.borderRight = isHorizontal ? '1px solid #ddd' : 'none';
         iframe.style.borderBottom = !isHorizontal ? '1px solid #ddd' : 'none';
       });
       chrome.storage.local.set({ layoutPreference: layout });
     };
-  
-    // --- Set iframe sources (after header rules are active) ---
-    if (isArchiveUrl(archiveUrl)) {
-      archiveFrame.src = archiveUrl;
-    } else {
-      archiveBlocked.classList.remove('hidden');
-      archiveBlocked.querySelector('p').textContent = 'Invalid archive URL — must be from archive.org.';
-    }
 
-    if (isValidHttpUrl(liveUrl)) {
-      liveFrame.src = liveUrl;
-    } else {
-      liveBlocked.classList.remove('hidden');
-      liveBlocked.querySelector('p').textContent = 'Invalid live URL — only http/https allowed.';
-    }
-
-    // --- Detect blocked iframes (fallback for JS-based frame busting) ---
-    const detectBlockedIframe = (frame, panel, url) => {
-      // Check multiple times — some sites take a moment to bust out
-      const checks = [2000, 5000];
-      checks.forEach(delay => {
-        setTimeout(() => {
-          try {
-            // Cross-origin frames throw on contentDocument access
-            void frame.contentDocument;
-          } catch {
-            // Cross-origin is expected and fine — means it loaded
-            return;
-          }
-          // If we CAN access contentDocument, check if it's empty (failed to load)
-          if (frame.contentDocument && frame.contentDocument.body) {
-            const bodyText = frame.contentDocument.body.innerText?.trim() || '';
-            if (bodyText === '' && frame.contentDocument.title === '') {
-              panel.classList.remove('hidden');
-            }
-          }
-        }, delay);
-      });
-
-      // Also listen for load errors
-      frame.addEventListener('error', () => {
-        panel.classList.remove('hidden');
-      });
-    };
-
-    detectBlockedIframe(liveFrame, liveBlocked, liveUrl);
-    detectBlockedIframe(archiveFrame, archiveBlocked, archiveUrl);
-
-    // Layout preference
     chrome.storage.local.get('layoutPreference', ({ layoutPreference }) => {
       setLayout(layoutPreference || 'horizontal');
     });
-  
-    // Buttons
+
     document.getElementById('horizontalBtn')?.addEventListener('click', () => setLayout('horizontal'));
     document.getElementById('verticalBtn')?.addEventListener('click', () => setLayout('vertical'));
-  
-    // Toggle live frame
+
     hideLiveBtn?.addEventListener('click', () => {
       liveVisible = !liveVisible;
       liveFrame.style.display = liveVisible ? 'block' : 'none';
       hideLiveBtn.textContent = liveVisible ? 'Toggle Live' : 'Show Live';
     });
-    // Toggle archive frame
     hideArchiveBtn?.addEventListener('click', () => {
       archiveVisible = !archiveVisible;
       archiveFrame.style.display = archiveVisible ? 'block' : 'none';
       hideArchiveBtn.textContent = archiveVisible ? 'Toggle Archive' : 'Show Archive';
     });
-  
-    // Open in new tab — with validation + noopener
+
     document.getElementById('openLive')?.addEventListener('click', () => {
-      if (isValidHttpUrl(liveUrl)) {
-        window.open(liveUrl, '_blank', 'noopener,noreferrer');
-      }
+      if (isValidHttpUrl(liveUrl)) window.open(liveUrl, '_blank', 'noopener,noreferrer');
     });
     document.getElementById('openArchive')?.addEventListener('click', () => {
-      if (isArchiveUrl(archiveUrl)) {
-        window.open(archiveUrl, '_blank', 'noopener,noreferrer');
-      }
+      if (isArchiveUrl(archiveUrl)) window.open(archiveUrl, '_blank', 'noopener,noreferrer');
     });
-  
-    // Feature: Keyboard shortcuts for layout and toggling
+
     document.addEventListener('keydown', (e) => {
       if (e.altKey && e.key === 'h') setLayout('horizontal');
       if (e.altKey && e.key === 'v') setLayout('vertical');
