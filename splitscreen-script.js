@@ -41,14 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const RULE_ID = 1;
 
     function setupHeaderRules() {
-      if (!chrome?.declarativeNetRequest?.updateDynamicRules) {
+      if (!chrome?.declarativeNetRequest?.updateSessionRules) {
         console.warn('declarativeNetRequest not available');
         return Promise.resolve();
       }
 
       return chrome.tabs.getCurrent().then(tab => {
         if (!tab?.id) return;
-        return chrome.declarativeNetRequest.updateDynamicRules({
+        return chrome.declarativeNetRequest.updateSessionRules({
           removeRuleIds: [RULE_ID],
           addRules: [{
             id: RULE_ID,
@@ -70,8 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function cleanupRules() {
-      if (!chrome?.declarativeNetRequest?.updateDynamicRules) return;
-      chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [RULE_ID] }).catch(() => {});
+      if (!chrome?.declarativeNetRequest?.updateSessionRules) return;
+      chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [RULE_ID] }).catch(() => {});
     }
 
     // --- Load iframes ---
